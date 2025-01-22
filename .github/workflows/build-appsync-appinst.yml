@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest  # Switch to macOS for better compatibility
+    runs-on: macos-latest  # Using macOS runner for better compatibility
 
     steps:
     - name: Checkout repository
@@ -19,7 +19,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        brew install git curl ldid perl make python3 clang llvm openssl zip unzip dpkg
+        brew install git curl ldid perl make python3 llvm openssl zip unzip dpkg
+        xcode-select --install || echo "Xcode Command Line Tools already installed"
 
     - name: Install Theos
       run: |
