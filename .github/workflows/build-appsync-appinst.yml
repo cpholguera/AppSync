@@ -1,0 +1,57 @@
+name: Build AppSync and AppInst Deb Packages
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y git curl ldid perl make python3 clang llvm libssl-dev zip unzip
+
+    - name: Install Theos
+      run: |
+        git clone --recursive https://github.com/theos/theos.git $HOME/theos
+        echo "export THEOS=$HOME/theos" >> $GITHUB_ENV
+        echo "export PATH=$THEOS/bin:$PATH" >> $GITHUB_ENV
+
+    - name: Clone AppSync repository
+      run: |
+        git clone https://github.com/akemin-dayo/AppSync.git
+
+    - name: Build AppSync Unified
+      run: |
+        cd AppSync
+        make
+        make package
+
+    - name: Upload AppSync Deb Package
+      uses: actions/upload-artifact@v4
+      with:
+        name: appsync-deb
+        path: AppSync/packages/*.deb
+
+    - name: Build AppInst
+      run: |
+        cd AppSync/appinst
+        make
+        make package
+
+    - name: Upload AppInst Deb Package
+      uses: actions/upload-artifact@v4
+      with:
+        name: appinst-deb
+        path: AppSync/appinst/packages/*.deb
