@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest  # Switch to macOS for better compatibility
 
     steps:
     - name: Checkout repository
@@ -19,8 +19,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt update
-        sudo apt install -y git curl ldid perl make python3 clang llvm libssl-dev zip unzip
+        brew install git curl ldid perl make python3 clang llvm openssl zip unzip dpkg
 
     - name: Install Theos
       run: |
