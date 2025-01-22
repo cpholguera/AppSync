@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest  # Using macOS runner for better compatibility
+    runs-on: macos-latest
 
     steps:
     - name: Checkout repository
@@ -27,6 +27,15 @@ jobs:
         git clone --recursive https://github.com/theos/theos.git $HOME/theos
         echo "export THEOS=$HOME/theos" >> $GITHUB_ENV
         echo "export PATH=$THEOS/bin:$PATH" >> $GITHUB_ENV
+        echo "THEOS=$HOME/theos" >> $HOME/.bash_profile
+        echo "PATH=$THEOS/bin:$PATH" >> $HOME/.bash_profile
+        source $HOME/.bash_profile
+
+    - name: Verify Theos Installation
+      run: |
+        export THEOS=$HOME/theos
+        ls $THEOS/makefiles/common.mk || echo "Missing common.mk"
+        ls $THEOS/aggregate.mk || echo "Missing aggregate.mk"
 
     - name: Clone AppSync repository
       run: |
@@ -34,6 +43,8 @@ jobs:
 
     - name: Build AppSync Unified
       run: |
+        export THEOS=$HOME/theos
+        export PATH=$THEOS/bin:$PATH
         cd AppSync
         make
         make package
@@ -46,6 +57,8 @@ jobs:
 
     - name: Build AppInst
       run: |
+        export THEOS=$HOME/theos
+        export PATH=$THEOS/bin:$PATH
         cd AppSync/appinst
         make
         make package
