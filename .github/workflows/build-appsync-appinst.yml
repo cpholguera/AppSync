@@ -2,13 +2,9 @@ name: Build AppSync and AppInst Deb Packages
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [main, master]
   pull_request:
-    branches:
-      - main
-      - master
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -16,55 +12,65 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        brew install git curl ldid perl make python3 llvm openssl zip unzip dpkg
-        xcode-select --install || echo "Xcode Command Line Tools already installed"
+      - name: Install dependencies
+        run: |
+          brew install git curl ldid perl make python3 llvm openssl zip unzip dpkg
+          # This usually won't do anything in Actions since the CL tools are pre-installed:
+          xcode-select --install || echo "Xcode Command Line Tools already installed"
 
-    - name: Install Theos
-      run: |
-        git clone --recursive https://github.com/theos/theos.git $HOME/theos
-        echo "export THEOS=$HOME/theos" >> $GITHUB_ENV
-        echo "export PATH=$THEOS/bin:$PATH" >> $GITHUB_ENV
-        source $GITHUB_ENV
+      - name: Install Theos
+        run: |
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          echo "export THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "export PATH=$THEOS/bin:$PATH" >> $GITHUB_ENV
+          # Source changes so subsequent steps see them
+          source $GITHUB_ENV
 
-    - name: Verify Theos Installation
-      run: |
-        export THEOS=$HOME/theos
-        if [ ! -f "$THEOS/makefiles/common.mk" ]; then
-          echo "Error: common.mk not found in Theos."
-          exit 1
-        fi
-        if [ ! -f "$THEOS/aggregate.mk" ]; then
-          echo "Error: aggregate.mk not found in Theos."
-          exit 1
-        fi
+      - name: Verify Theos Installation
+        run: |
+          export THEOS=$HOME/theos
+          ls $THEOS/makefiles/common.mk || echo "Missing common.mk"
+          ls $THEOS/aggregate.mk       || echo "Missing aggregate.mk"
 
-    - name: Clone AppSync repository
-      run: |
-        git clone https://github.com/akemin-dayo/AppSync.git
+      - name: Clone AppSync repository
+        run: |
+          git clone https://github.com/akemin-dayo/AppSync.git
 
-    - name: Clean Build
-      run: |
-        export THEOS=$HOME/theos
-        export PATH=$THEOS/bin:$PATH
-        cd AppSync
-        make clean
+      - name: Build AppSync Unified
+        run: |
+          export THEOS=$HOME/theos
+          export PATH=$THEOS/bin:$PATH
+          export SDKVERSION=$(xcrun --sdk iphoneos --show-sdk-version)
 
-    - name: Build AppSync Unified
-      run: |
-        export THEOS=$HOME/theos
-        export PATH=$THEOS/bin:$PATH
-        export SDKVERSION=$(xcrun --sdk iphoneos --show-sdk-version)
-        cd AppSync
-        make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION"
-        make package
+          cd AppSync
+          # Pass in macros so that the code expands cleanly:
+          make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION" \
+            ADDITIONAL_CFLAGS='-DL_LAUNCHDAEMON_PATH=\"/Library/LaunchDaemons\" -DROOT_PATH(x)=x'
+          make package
 
-    - name: Upload AppSync Deb Package
-      uses: actions/upload-artifact@v4
-      with:
-        name: appsync-deb
-        path: AppSync/packages/*.deb
+      - name: Upload AppSync Deb Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: appsync-deb
+          path: AppSync/packages/*.deb
+
+      - name: Build AppInst
+        run: |
+          export THEOS=$HOME/theos
+          export PATH=$THEOS/bin:$PATH
+          export SDKVERSION=$(xcrun --sdk iphoneos --show-sdk-version)
+
+          cd AppSync/appinst
+          # Same macros for the sub-project if needed:
+          make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION" \
+            ADDITIONAL_CFLAGS='-DL_LAUNCHDAEMON_PATH=\"/Library/LaunchDaemons\" -DROOT_PATH(x)=x'
+          make package
+
+      - name: Upload AppInst Deb Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: appinst-deb
+          path: AppSync/appinst/packages/*.deb
