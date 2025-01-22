@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           brew install git curl ldid perl make python3 llvm openssl zip unzip dpkg
-          # This usually won't do anything in Actions since the CL tools are pre-installed:
+          # Usually no-op on GitHub Actions; included just in case:
           xcode-select --install || echo "Xcode Command Line Tools already installed"
 
       - name: Install Theos
@@ -26,14 +26,13 @@ jobs:
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
           echo "export THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "export PATH=$THEOS/bin:$PATH" >> $GITHUB_ENV
-          # Source changes so subsequent steps see them
+          # Source it so further steps inherit
           source $GITHUB_ENV
 
       - name: Verify Theos Installation
         run: |
-          export THEOS=$HOME/theos
-          ls $THEOS/makefiles/common.mk || echo "Missing common.mk"
-          ls $THEOS/aggregate.mk       || echo "Missing aggregate.mk"
+          ls $HOME/theos/makefiles/common.mk  || echo "Missing common.mk"
+          ls $HOME/theos/aggregate.mk        || echo "Missing aggregate.mk"
 
       - name: Clone AppSync repository
         run: |
@@ -45,10 +44,16 @@ jobs:
           export PATH=$THEOS/bin:$PATH
           export SDKVERSION=$(xcrun --sdk iphoneos --show-sdk-version)
 
+          # Disable Theos colored output:
+          export DISABLE_THEOS_COLORED_OUTPUT=1
+
           cd AppSync
-          # Pass in macros so that the code expands cleanly:
-          make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION" \
-            ADDITIONAL_CFLAGS='-DL_LAUNCHDAEMON_PATH=\"/Library/LaunchDaemons\" -DROOT_PATH(x)=x'
+          # If you need the macros from earlier conversation:
+          # ADDED_CFLAGS='-DL_LAUNCHDAEMON_PATH=\"/Library/LaunchDaemons\" -DROOT_PATH(x)=x'
+          # make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION" ADDITIONAL_CFLAGS="$ADDED_CFLAGS"
+          #
+          # Otherwise, just do:
+          make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION"
           make package
 
       - name: Upload AppSync Deb Package
@@ -62,11 +67,10 @@ jobs:
           export THEOS=$HOME/theos
           export PATH=$THEOS/bin:$PATH
           export SDKVERSION=$(xcrun --sdk iphoneos --show-sdk-version)
+          export DISABLE_THEOS_COLORED_OUTPUT=1
 
           cd AppSync/appinst
-          # Same macros for the sub-project if needed:
-          make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION" \
-            ADDITIONAL_CFLAGS='-DL_LAUNCHDAEMON_PATH=\"/Library/LaunchDaemons\" -DROOT_PATH(x)=x'
+          make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION"
           make package
 
       - name: Upload AppInst Deb Package
