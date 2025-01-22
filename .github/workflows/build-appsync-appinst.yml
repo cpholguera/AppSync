@@ -21,7 +21,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        brew install git curl ldid perl make python3 llvm openssl zip unzip dpkg gnu-sed automake autoconf
+        brew install git curl ldid perl make python3 llvm openssl zip unzip dpkg
         xcode-select --install || echo "Xcode Command Line Tools already installed"
 
     - name: Install Theos
@@ -29,6 +29,19 @@ jobs:
         git clone --recursive https://github.com/theos/theos.git $HOME/theos
         echo "export THEOS=$HOME/theos" >> $GITHUB_ENV
         echo "export PATH=$THEOS/bin:$PATH" >> $GITHUB_ENV
+        source $GITHUB_ENV
+
+    - name: Verify Theos Installation
+      run: |
+        export THEOS=$HOME/theos
+        if [ ! -f "$THEOS/makefiles/common.mk" ]; then
+          echo "Error: common.mk not found in Theos."
+          exit 1
+        fi
+        if [ ! -f "$THEOS/aggregate.mk" ]; then
+          echo "Error: aggregate.mk not found in Theos."
+          exit 1
+        fi
 
     - name: Clone AppSync repository
       run: |
@@ -36,6 +49,8 @@ jobs:
 
     - name: Clean Build
       run: |
+        export THEOS=$HOME/theos
+        export PATH=$THEOS/bin:$PATH
         cd AppSync
         make clean
 
@@ -45,7 +60,7 @@ jobs:
         export PATH=$THEOS/bin:$PATH
         export SDKVERSION=$(xcrun --sdk iphoneos --show-sdk-version)
         cd AppSync
-        make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION" LOGOS_DEFAULT_DEFINES="-DNO_DEPRECATED=1"
+        make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION"
         make package
 
     - name: Upload AppSync Deb Package
