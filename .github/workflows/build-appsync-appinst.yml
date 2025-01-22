@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - master
   pull_request:
     branches:
       - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -46,7 +48,7 @@ jobs:
         export THEOS=$HOME/theos
         export PATH=$THEOS/bin:$PATH
         cd AppSync
-        make
+        make ARCHS="arm64 arm64e" TARGET=iphone:clang:14.0
         make package
 
     - name: Upload AppSync Deb Package
@@ -60,7 +62,7 @@ jobs:
         export THEOS=$HOME/theos
         export PATH=$THEOS/bin:$PATH
         cd AppSync/appinst
-        make
+        make ARCHS="arm64 arm64e" TARGET=iphone:clang:14.0
         make package
 
     - name: Upload AppInst Deb Package
