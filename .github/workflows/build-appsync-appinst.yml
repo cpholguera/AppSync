@@ -47,8 +47,9 @@ jobs:
       run: |
         export THEOS=$HOME/theos
         export PATH=$THEOS/bin:$PATH
+        export SDKVERSION=$(xcrun --sdk iphoneos --show-sdk-version)
         cd AppSync
-        make ARCHS="arm64 arm64e" TARGET=iphone:clang:14.0
+        make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION"
         make package
 
     - name: Upload AppSync Deb Package
@@ -61,8 +62,9 @@ jobs:
       run: |
         export THEOS=$HOME/theos
         export PATH=$THEOS/bin:$PATH
+        export SDKVERSION=$(xcrun --sdk iphoneos --show-sdk-version)
         cd AppSync/appinst
-        make ARCHS="arm64 arm64e" TARGET=iphone:clang:14.0
+        make ARCHS="arm64 arm64e" TARGET="iphone:clang:$SDKVERSION"
         make package
 
     - name: Upload AppInst Deb Package
